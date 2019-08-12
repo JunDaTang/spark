@@ -484,6 +484,7 @@ private[spark] class Master(
     }
   }
 
+  // 完成Master的主备切换，从字面意思上来看，其实就是完成Master的恢复
   def completeRecovery() {
     // Ensure "only-once" recovery semantics using a short synchronization period.
     synchronized {
@@ -491,6 +492,10 @@ private[spark] class Master(
       state = RecoveryState.COMPLETING_RECOVERY
     }
 
+    // 将Application和Worker， 过滤出来目前状态不是UNKNOWN的
+    // 然后遍历，分别调用removeWorker和finishApplication方法， 对可能已经出故障， 或者甚至已经死掉的
+    // 总结一下清理的机制，三点：1、从内存缓存结构中移除；2、从相关的组件的内存缓存中移除; 3、从持久化存储中移除
+    // Application和Worker， 进行清理
     // Kill off any workers and apps that didn't respond to us.
     workers.filter(_.state == WorkerState.UNKNOWN).foreach(removeWorker)
     apps.filter(_.state == ApplicationState.UNKNOWN).foreach(finishApplication)
