@@ -82,9 +82,14 @@ private[spark] class SparkDeploySchedulerBackend(
     val command = Command("org.apache.spark.executor.CoarseGrainedExecutorBackend",
       args, sc.executorEnvs, classPathEntries ++ testingClassPath, libraryPathEntries, javaOpts)
     val appUIAddress = sc.ui.map(_.appUIAddress).getOrElse("")
+    
+    // 这个ApplicationDescription，非常重要， 后面我们剖析Master的，还会来看它
+    // 它就代表了当前执行的这个application的一些情况
+    // 包括application最大需要多少cpu core, 每个slave上需要多少内存
     val appDesc = new ApplicationDescription(sc.appName, maxCores, sc.executorMemory, command,
       appUIAddress, sc.eventLogDir, sc.eventLogCodec)
 
+    // 创建了AppClient
     client = new AppClient(sc.env.actorSystem, masters, appDesc, this, conf)
     client.start()
 

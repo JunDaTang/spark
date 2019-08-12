@@ -36,6 +36,13 @@ import org.apache.spark.util.Utils
 import org.apache.spark.executor.TaskMetrics
 import org.apache.spark.storage.BlockManagerId
 
+/*
+ * 1、底层通过操作一个SchedulerBackend, 针对不同种类的cluster(standalone、yarn、mesos), 通度task
+ * 2、它也可以通过使用一个LocalBackend, 并且将isLocal参数设置为true, 来在本地模式下工作
+ * 3、它负责处理一些通用的逻辑，比如说决定多个job的调度顺序，启动推荐测任执行
+ * 4、客户端首先应用调用它的initialize()方法和start()方法， 然后通过runTasks()方法提交task sets
+ */
+
 /**
  * Schedules tasks for multiple types of clusters by acting through a SchedulerBackend.
  * It can also work with a local setup by using a LocalBackend and setting isLocal to true.

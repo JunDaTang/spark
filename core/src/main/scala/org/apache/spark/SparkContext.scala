@@ -2150,7 +2150,8 @@ object SparkContext extends Logging {
         val backend = new LocalBackend(scheduler, threadCount)
         scheduler.initialize(backend)
         (backend, scheduler)
-
+      
+      // 这是我们常用的spark提交模式中的standalone方式
       case SPARK_REGEX(sparkUrl) =>
         val scheduler = new TaskSchedulerImpl(sc)
         val masterUrls = sparkUrl.split(",").map("spark://" + _)
