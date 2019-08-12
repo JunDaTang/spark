@@ -311,15 +311,25 @@ private[spark] class Master(
       }
     }
 
+    /*
+     * 处理Application注册的请求
+     */
     case RegisterApplication(description) => {
+      // 如果master的状态是standby， 也就是当前这个master, 是StandBy Master， 不是Active Master
+      // 那么Application来请求注册，什么都不会干
       if (state == RecoveryState.STANDBY) {
         // ignore, don't send response
       } else {
         logInfo("Registering app " + description.name)
+        // 用ApplicationDescription信息， 创建ApplicationInfo
         val app = createApplication(description, sender)
+        // 注册application
+        // 将ApplicationInfo加入缓 存，将Application加入等待调度的队列----waitingApps
         registerApplication(app)
         logInfo("Registered app " + description.name + " with ID " + app.id)
+        // 使用持久化引擎，将ApplicationInfo进行持久化
         persistenceEngine.addApplication(app)
+        // 反向，向SparkDeploySchedulerBackend的AppClient的ClientActor，发送信息，也就是RegisteredApplication
         sender ! RegisteredApplication(app.id, masterUrl)
         schedule()
       }
@@ -682,10 +692,14 @@ private[spark] class Master(
     }
 
     applicationMetricsSystem.registerSource(app.appSource)
+    
+    // 这里， 其实就是将app的信息加入内存缓存中
     apps += app
     idToApp(app.id) = app
     actorToApp(app.driver) = app
     addressToApp(appAddress) = app
+    
+    // 将app加入等待调度的队列----waitingApps
     waitingApps += app
   }
 
