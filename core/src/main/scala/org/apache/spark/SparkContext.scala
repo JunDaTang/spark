@@ -584,6 +584,12 @@ class SparkContext(config: SparkConf) extends Logging with ExecutorAllocationCli
    * Read a text file from HDFS, a local file system (available on all nodes), or any
    * Hadoop-supported file system URI, and return it as an RDD of Strings.
    */
+  /*
+   * 首先，hadoopFile() 方法的调用，会创建一个HadoopRDD,其中的元素，其实是（key, value） pair
+   * key是hdfs或文本文件的每一行的offset,value就是文本行
+   * 然后对HadoopRDD调用map（）方法，会剔除key,只保留value,然后会获得一个MapPartitionsRDD
+   * MapPartitionsRDD内部的元素，其实就是一行一行的文本行
+   */
   def textFile(path: String, minPartitions: Int = defaultMinPartitions): RDD[String] = {
     assertNotStopped()
     hadoopFile(path, classOf[TextInputFormat], classOf[LongWritable], classOf[Text],
@@ -762,6 +768,7 @@ class SparkContext(config: SparkConf) extends Logging with ExecutorAllocationCli
       ): RDD[(K, V)] = {
     assertNotStopped()
     // A Hadoop configuration can be about 10 KB, which is pretty big, so broadcast it.
+    // 这里是hadoop的知识，拿到hadoop的配置文件进行序列化，并广播出去
     val confBroadcast = broadcast(new SerializableWritable(hadoopConfiguration))
     val setInputPathsFunc = (jobConf: JobConf) => FileInputFormat.setInputPaths(jobConf, path)
     new HadoopRDD(
@@ -1481,6 +1488,7 @@ class SparkContext(config: SparkConf) extends Logging with ExecutorAllocationCli
     if (conf.getBoolean("spark.logLineage", false)) {
       logInfo("RDD's recursive dependencies:\n" + rdd.toDebugString)
     }
+    // 调用SparkContext，之前初始化时创建的DAGScheduler的runJob()方法
     dagScheduler.runJob(rdd, cleanedFunc, partitions, callSite, allowLocal,
       resultHandler, localProperties.get)
     progressBar.foreach(_.finishAll())

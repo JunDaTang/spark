@@ -200,6 +200,7 @@ class HadoopRDD[K, V](
     if (inputFormat.isInstanceOf[Configurable]) {
       inputFormat.asInstanceOf[Configurable].setConf(jobConf)
     }
+    // 一份hdfs文件为何是一个block，实际上是调用getSplits，并返回partition
     val inputSplits = inputFormat.getSplits(jobConf, minPartitions)
     val array = new Array[Partition](inputSplits.size)
     for (i <- 0 until inputSplits.size) {
