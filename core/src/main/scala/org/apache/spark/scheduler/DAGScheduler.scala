@@ -852,7 +852,7 @@ class DAGScheduler(
         
         // 这里其实会反复递归调用
         // 直到最初的stage，它没有父stage了
-        // 那么，此时，就会去首先提交这个第一个stage， stage0， 也就是最终的那个"父stage"
+        // 那么，此时，就会去首先提交这个第一个stage， stage0
         // 其余的stage， 此时全部都在waitingStages里面
         if (missing == Nil) {
           logInfo("Submitting " + stage + " (" + stage.rdd + "), which has no missing parents")
@@ -975,6 +975,7 @@ class DAGScheduler(
       logDebug("New pending tasks: " + stage.pendingTasks)
       
       //  最后，针对stage的task，创建TaskSet对象，调用TaskScheduler的submitTasks()方法，提交TaskSet
+      // 默认情况下， 我们的standalone模式，是使用的TaskSchedulerImpl，TaskScheduler只是一个trait
       taskScheduler.submitTasks(
         new TaskSet(tasks.toArray, stage.id, stage.newAttemptId(), stage.jobId, properties))
       stage.latestInfo.submissionTime = Some(clock.getTimeMillis())
