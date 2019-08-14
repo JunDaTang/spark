@@ -124,9 +124,23 @@ private[spark] class Executor(
       attemptNumber: Int,
       taskName: String,
       serializedTask: ByteBuffer) {
+    // 对于每一个都会创建TaskRunner
+    // TaskRunner继承的是Java的多线程中的Runable接口
+    // 是不是说，spark只要会scala就好！？？
+    // 那是没有读过spark源码的人说出来的话
+    // 实际上，无论是对于学习大数据的任何技术来说，hadoop生态、storm,spark
+    // java都是非常非常重要的
     val tr = new TaskRunner(context, taskId = taskId, attemptNumber = attemptNumber, taskName,
       serializedTask)
+    
+    // TaskRunner放入内存缓存
     runningTasks.put(taskId, tr)
+    
+    // 这里又来了， java， threadPool， Executor内部有一个java线程池
+    // 然后呢，这里其实将task封装在一个线程中（TaskRunner）
+    // 直接将线程丢入线程池， 进行执行
+    // 所以这里我们要知道，线程池是自动 实现了排队机制的，也就是说， 如果线程池内的线程暂时没有空闲的
+    // 那么丢进来的线程都是要排队的
     threadPool.execute(tr)
   }
 
