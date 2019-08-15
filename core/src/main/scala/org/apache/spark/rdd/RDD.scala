@@ -239,8 +239,10 @@ abstract class RDD[T: ClassTag](
    */
   final def iterator(split: Partition, context: TaskContext): Iterator[T] = {
     if (storageLevel != StorageLevel.NONE) {
+      // cacheManager的东西，先不讲，最后，倒数第二讲，会剖析CacheManager
       SparkEnv.get.cacheManager.getOrCompute(this, split, context, storageLevel)
     } else {
+      // 进行rdd partition的计算
       computeOrReadCheckpoint(split, context)
     }
   }
@@ -274,6 +276,7 @@ abstract class RDD[T: ClassTag](
    */
   private[spark] def computeOrReadCheckpoint(split: Partition, context: TaskContext): Iterator[T] =
   {
+    // Checkpoint先不讲，最后一讲是剖析 checkpoint
     if (isCheckpointed) firstParent[T].iterator(split, context) else compute(split, context)
   }
 

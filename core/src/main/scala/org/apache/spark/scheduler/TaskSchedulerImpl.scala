@@ -371,8 +371,11 @@ private[spark] class TaskSchedulerImpl(
     var failedExecutor: Option[String] = None
     synchronized {
       try {
+        // 判断如果task是lost了，大家在实际编写spark应用程序的时候，可能会经常发现task lost了
+        // 这个时候，就是因为各种各样的原因，执行失败了
         if (state == TaskState.LOST && taskIdToExecutorId.contains(tid)) {
           // We lost this entire executor, so remember that it's gone
+          // 这里就会移除executor，将它加入到失败队列
           val execId = taskIdToExecutorId(tid)
           if (activeExecutorIds.contains(execId)) {
             removeExecutor(execId)
@@ -380,11 +383,15 @@ private[spark] class TaskSchedulerImpl(
           }
         }
         taskIdToTaskSetId.get(tid) match {
+          // 获取对应taskSet
           case Some(taskSetId) =>
+            // 如果task结束了，从内存缓 存中移除
             if (TaskState.isFinished(state)) {
               taskIdToTaskSetId.remove(tid)
               taskIdToExecutorId.remove(tid)
             }
+            
+            // 如果正常结束，那么也做相应的处理
             activeTaskSets.get(taskSetId).foreach { taskSet =>
               if (state == TaskState.FINISHED) {
                 taskSet.removeRunningTask(tid)

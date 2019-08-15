@@ -52,6 +52,10 @@ private[spark] abstract class Task[T](val stageId: Int, var partitionId: Int) ex
    * @return the result of the task
    */
   final def run(taskAttemptId: Long, attemptNumber: Int): T = {
+    
+    // 创建一个TaskContext，就是task的执行上下文
+    // 里面记录了task执行的一些去全局性的数据
+    // 比如说，task重试了几次，包括，task属于哪个stage，task要处理的是rdd的哪个partition,等等
     context = new TaskContextImpl(stageId = stageId, partitionId = partitionId,
       taskAttemptId = taskAttemptId, attemptNumber = attemptNumber, runningLocally = false)
     TaskContextHelper.setTaskContext(context)
@@ -61,13 +65,24 @@ private[spark] abstract class Task[T](val stageId: Int, var partitionId: Int) ex
       kill(interruptThread = false)
     }
     try {
+      // 调用抽象方法，runTask()
       runTask(context)
     } finally {
       context.markTaskCompleted()
       TaskContextHelper.unset()
     }
   }
-
+  
+  
+  /*
+   * 调用到了抽象方法，那就意味着什么
+   * 这个类，只是一个模板类，或者抽象父类
+   * 仅仅封装了一些子类通用的数据和操作
+   * 而关键的操作， 全部都要依赖于子类的实现
+   * task的子类，有哪些实现？？
+   * ShuffleMapTask、ResultTask, 要运行它们的runTask()方法，才能执行我们自已定义的算子和逻辑
+   * 进入口：org.apache.spark.scheduler >> ShuffleMapTask和ResultTask
+   */
   def runTask(context: TaskContext): T
 
   def preferredLocations: Seq[TaskLocation] = Nil
