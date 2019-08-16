@@ -136,8 +136,11 @@ private[spark] abstract class MapOutputTracker(conf: SparkConf) extends Logging 
     if (statuses == null) {
       logInfo("Don't have map outputs for shuffle " + shuffleId + ", fetching them")
       var fetchedStatuses: Array[MapStatus] = null
+      
+      // 做了线程同步
       fetching.synchronized {
         // Someone else is fetching it; wait for them to be done
+        // 不断去拉取shuffleId对应的数据，只要还没拉到，死循环，等待
         while (fetching.contains(shuffleId)) {
           try {
             fetching.wait()
@@ -163,6 +166,7 @@ private[spark] abstract class MapOutputTracker(conf: SparkConf) extends Logging 
           val fetchedBytes =
             askTracker(GetMapOutputStatuses(shuffleId)).asInstanceOf[Array[Byte]]
           fetchedStatuses = MapOutputTracker.deserializeMapStatuses(fetchedBytes)
+          
           logInfo("Got the output locations")
           mapStatuses.put(shuffleId, fetchedStatuses)
         } finally {
